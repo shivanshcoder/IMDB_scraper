@@ -3,3 +3,6 @@
 ################################################################################
 
 /.vs
+/IMDB_scraper/.vs/IMDB_scraper/v16
+/IMDB_scraper/IMDB_scraper/__pycache__
+/IMDB_scraper/IMDB_scraper/scraper_tools
