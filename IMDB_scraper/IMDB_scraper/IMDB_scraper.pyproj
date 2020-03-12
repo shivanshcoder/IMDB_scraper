@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b31eae3c-662e-408c-8686-2cb0429e84ab</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Artist.py</StartupFile>
+    <StartupFile>init.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,13 +22,25 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Artist.py">
+    <Compile Include="Person.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DataBase.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="extras.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="IMDB_scraper.py" />
+    <Compile Include="init.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IO.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Title.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="scraper_tools\">

@@ -6,10 +6,17 @@ titleName = "tt4244998" #Alpha 2018
 
 actorName = "nm10406540"
 
-def GetMovieList(actorName):
-	movie_list = []
+def GetMovieList(actorId):
+	movie_list = [] 
 
-	html = urlopen("https://www.imdb.com/name/"+actorName)
+	length = len(str(actorId))
+	if(length<7):
+		str_id = ""
+		for i in range(0,7-length):
+			str_id += "0"
+		str_id+=str(actorId)
+
+	html = urlopen("https://www.imdb.com/name/nm" + str(str_id) )
 	bsObj = BeautifulSoup(html)
 	
 	movies_div = bsObj.find("div", {"class": "filmo-category-section"})
@@ -51,11 +58,15 @@ def GetCast(titleName):
 
 	return our_array
 	
-def GetCastIDs(titleName):
+def GetCastIDs(titleName, movieName):
 	our_array = []
+
+
+
 	html = urlopen("https://www.imdb.com/title/"+titleName+"/fullcredits?")
 	bsObj = BeautifulSoup(html)
-	tabls = bsObj.find("table", {"class":"cast_list"})
+
+	movieName.append( bsObj.find("h3", {"itemprop": "name" }).a.getText() )
 
 	for sibling in bsObj.find("table", {"class":"cast_list"}).tr.next_siblings:
 
@@ -63,12 +74,17 @@ def GetCastIDs(titleName):
 		if sibling =='\n':
 			continue
 
-		#Don't get names of the uncredited Actors
-		if(sibling.td.attrs['class'] == ['castlist_label']):
-			break
+		try:
+			#Don't get names of the uncredited Actors
+			if(sibling.td.attrs['class'] == ['castlist_label']):
+				break
+		except(...):
+			pass
 
 		temp = sibling.td.next_sibling.next_sibling
-		id = temp.a.attrs['href'][8:-1]
+
+
+		id = temp.a.attrs['href'].split('/')[2][2:]
 		our_array.append(id)
 
 	return our_array
