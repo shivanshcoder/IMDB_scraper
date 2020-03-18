@@ -28,14 +28,7 @@
     <Compile Include="DataBase.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="extras.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="IMDB_scraper.py" />
     <Compile Include="init.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="IO.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Title.py">
@@ -52,14 +45,6 @@
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
       <Architecture>X64</Architecture>
     </Interpreter>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="store.db">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="temp.txt">
-      <SubType>Code</SubType>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

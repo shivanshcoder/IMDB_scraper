@@ -2,10 +2,10 @@ from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
 from DataBase import connectDB 
-from mysql.connector import Error
+import mysql
 import json
 
-
+import time
 
 class Title(object):
 	"""
@@ -49,18 +49,20 @@ class Title(object):
 
 			#No record found for the person
 			if result == None :
+				dbConn.close()
 				return False
 			
-
+			dbCursor.execute("UPDATE titles_to_scrape SET priority=0 WHERE id=%s", (self.id,))
+			#dbCursor.execute("DELETE FROM titles_to_scrape WHERE id=%s",(self.id,))
+			dbConn.commit()
 			if loadData:
 				#Fill the Data from the DB
 				self.name = result[1]
 				misc_data = json.loads(result[2])
 
-				self.castCrew = misc_data["castCrew"]
 				self.imagePath = misc_data["imagePath"]
-
-
+			dbConn.close()
+			return True
 		except Error as Err:
 			print(Err)
 			return False
@@ -78,82 +80,72 @@ class Title(object):
 
 		"""
 
-		mainData = bsObj.find("div", {"class":"fullcredits_content"})
+		mainData = bsObj.find("div", {"id":"fullcredits_content"})
 		
-
-		#Get Cast Credits
-		castListTable = mainData.find("table", {"class": "cast_list"})
-
-
-		cast = []
-		for sibling in bsObj.find("table", {"class":"cast_list"}).tr.next_siblings:
-	
-			#There is '\n' after every tag
-			if sibling =='\n':
-				continue
+		mainTables = mainData.findAll("table")
+		casts = []
+		#Each table contains the the cast crew data
+		for table in mainTables:
 			
-			if not 'class' in sibling.attrs:
-				continue
+			temp = table.findAll("td", {"class": "name"})
 
-			temp = sibling.td.next_sibling.next_sibling
+			if temp == []:
+				temp = table.findAll("td", {"class":"primary_photo"})
 
+			for t in temp:
+				casts.append(t.a.attrs['href'].split('/')[2][2:])
 
-			id = temp.a.attrs['href'].split('/')[2][2:]
-
-			cast.append(int(id))
-		self.castCrew["cast"] = cast
-
-		pass
+		self.castCrew = casts
 
 
-	def scrapeData(self):
+	def scrapeData(self, forceCheck=False):
 		"""
-			@desc: Scrapes the Data from the Web
+			@desc: 
+				Scrapes the Data from the Website
+			@param: 
+				(forceCheck) whether to Forcefully check from Web
+			@return: None
+		"""
+
+		#Check for data in Database
+		if self.checkInDB() and not forceCheck:
+			return
+
+		html = urlopen("https://www.imdb.com/title/tt"+str(self.id_str)+"/fullcredits")
+		bsObj = BeautifulSoup(html)
+
+		self.name = bsObj.find("h3", {"itemprop": "name" }).a.getText()
+
+		imagePath = bsObj.find("img", {"class":"poster"})
+		if imagePath:
+			self.imagePath = imagePath.attrs['src']
+		self.scrapeCastCrew(bsObj)
+
+
+	def commitDB(self):
+		"""
+			@desc: 
+				Saves or Updates the data of the title in the Database
+				Deletes the title from the list of to be scraped title
 			@param: None
 			@return: None
 		"""
-		try:
-			dbConn = connectDB() 
-			dbCursor = dbConn.cursor()
 
-			dbCursor.execute("SELECT * FROM movies WHERE id = %s", (self.id_str, ))
+		dbConn = connectDB()
+		dbCursor = dbConn.cursor()
 
-			result = dbCursor.fetchone()
+		#Save the data in title in DB
+		query = "INSERT INTO title VALUES(%s, %s, %s) ON DUPLICATE KEY UPDATE misc=%s"
+		misc = {
+			"imagePath" : self.imagePath	
+		}
+		data = (self.id, self.name, json.dumps(misc), json.dumps(misc), )
+		dbCursor.execute(query, data)
 
-			if result == None:
-				#Need to be scraped from WEB
-				html = urlopen("https://www.imdb.com/title/tt"+str(self.id_str)+"/fullcredits")
-				bsObj = BeautifulSoup(html)
-				
-				self.name = bsObj.find("h3", {"itemprop": "name" }).a.getText()
-
-				self.__scrapeCastCrew(bsObj)
-
-				dbCursor.execute("INSERT INTO movies VALUES(%s, %s, %s)", (self.id, self.name, json.dumps(self.cast_crew)))
-			
-				dbConn.commit()
-				dbConn.close()
-			else:
-				self.id = result[0]
-				self.id_str = "000000" + str(self.id)
-				self.name = result[1]
-				self.castCrew = json.loads(result[2])
-
-			
-		except Error as Err:
-			#maybe catch some DB exceptions
-			print(Err)
-			pass
-
-
-	def commit(self):
+		for cast in self.castCrew:
+			dbCursor.execute("INSERT INTO persons_to_scrape VALUES(%s, 100) ON DUPLICATE KEY UPDATE priority=priority+1", (cast, ))
 		
-		db_conn = connectDB()
-
-		db_cursor = db_conn.cursor()
-
-		#Check if movie already exists in DB
-		db_cursor.execute("SELECT * FROM movie_cast WHERE movie_id = {}".format(self.id))
-
-		for cast in db_cursor:
-			db_cursor.execute("INSERT INTO movie_cast VALUES({}, {})".format(self.id, cast))
+		#Delete the entry of this person from persosn_to_scrape DB
+		dbCursor.execute("DELETE FROM titles_to_scrape WHERE id=%s",(self.id,))
+		dbConn.commit()
+		dbConn.close()
